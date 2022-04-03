@@ -1,6 +1,9 @@
 import { Type } from '@nestjs/common';
-import { plainToClass, TransformOptions } from 'class-transformer';
+import { plainToInstance, TransformOptions } from 'class-transformer';
 import * as bench from 'nanobench';
+
+const parsedArgv = parseInt(process.argv[2], 10);
+const numberOfTests: Number = Number.isInteger(parsedArgv) && parsedArgv > 0 ? parsedArgv : 200000; 
 
 export function rewriteClass<TSource, TDest>(
   source: TSource,
@@ -38,7 +41,7 @@ export class BetterPromise<T> extends Promise<T> {
     options: Partial<TransformOptions> = {}
   ): Promise<InstanceType<TDest>> {
     return this.then((value) =>
-      plainToClass(to, value, { excludeExtraneousValues: true, ...options })
+      plainToInstance(to, value, { excludeExtraneousValues: true, ...options })
     );
   }
 
@@ -74,11 +77,9 @@ class OtherError12 extends Error {}
 class OtherError13 extends Error {}
 class CustomError extends Error {}
 
-bench('rethrow', async function (b) {
-  b.start();
-
+bench(`rethrow ${numberOfTests} times`, async (b) => {
   async function f() {
-    return new BetterPromise((resolve, reject) => reject(new OtherError6()))
+    return new BetterPromise((resolve, reject) => reject(new CustomError()))
       .rethrowAs(OtherError, Error)
       .rethrowAs(OtherError2, Error)
       .rethrowAs(OtherError3, Error)
@@ -95,20 +96,23 @@ bench('rethrow', async function (b) {
       .rethrowAs(CustomError, Error);
   }
 
-  try {
-    await f();
-  } catch (e) {
-    // gotcha
+  b.start();
+
+  for (let i = 0; i < numberOfTests; i++) {
+    try {
+      await f();
+    } catch (e) {
+      //gotcha
+    }  
   }
+
   b.end();
 });
 
-bench('switch', async function (b) {
-  b.start();
-
+bench(`switch ${numberOfTests} times`, async (b) => {
   async function f() {
     try {
-      await Promise.reject(new OtherError6());
+      await Promise.reject(new CustomError());
     } catch (e) {
       switch (true) {
         case e instanceof OtherError:
@@ -145,10 +149,16 @@ bench('switch', async function (b) {
       throw e;
     }
   }
-  try {
-    await f();
-  } catch (e) {
-    //gotcha
+
+  b.start();
+
+  for (let i = 0; i < numberOfTests; i++) {
+    try {
+      await f();
+    } catch (e) {
+      //gotcha
+    }  
   }
+  
   b.end();
 });
