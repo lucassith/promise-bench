@@ -12,4 +12,4 @@ To run given number of tests:
 `yarn start <number of tests>`
 
 ## Credits
-All credits to (LonguCodes)[https://github.com/LonguCodes] for inventing this method.
+All credits to [LonguCodes](https://github.com/LonguCodes) for inventing this method.
